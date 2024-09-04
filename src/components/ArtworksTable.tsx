@@ -3,7 +3,7 @@ import { DataTable, DataTablePageEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { Button } from 'primereact/button';
-import { Checkbox } from 'primereact/checkbox';
+// import { Checkbox } from 'primereact/checkbox';
 import { InputNumber } from 'primereact/inputnumber';
 import SelectedArtworksPanel from './SelectedArtworksPanel'; // Import the selected artworks panel
 
