@@ -5,7 +5,7 @@ import { OverlayPanel } from 'primereact/overlaypanel';
 import { Button } from 'primereact/button';
 // import { Checkbox } from 'primereact/checkbox';
 import { InputNumber } from 'primereact/inputnumber';
-import SelectedArtworksPanel from './SelectedArtworksPanel'; // Import the selected artworks panel
+import SelectedArtworksPanel from './SelectedArtworksPanel'; 
 
 export interface Artwork {
     id: number;
@@ -68,7 +68,7 @@ const ArtworksTable: React.FC = () => {
                 value={artworks}
                 paginator
                 rows={rows}
-                rowsPerPageOptions={[5, 10, 25, 50]}
+                rowsPerPageOptions={[12,50]}
                 totalRecords={totalRecords}
                 onPage={onPageChange}
                 lazy
@@ -76,6 +76,7 @@ const ArtworksTable: React.FC = () => {
                 selection={selectedArtworks}
                 onSelectionChange={onSelectionChange}
                 dataKey="id"
+                selectionMode="multiple"  
                 tableStyle={{ minWidth: '50rem' }}
             >
                 <Column header={() => (
