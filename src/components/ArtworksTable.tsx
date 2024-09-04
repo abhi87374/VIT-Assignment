@@ -60,6 +60,7 @@ const ArtworksTable: React.FC = () => {
             const newSelection = artworks.slice(0, numRows);
             setSelectedArtworks(newSelection);
         }
+        console.log("Enter button clicked!");
     };
 
     return (
@@ -81,12 +82,13 @@ const ArtworksTable: React.FC = () => {
             >
                 <Column header={() => (
                     <div className="p-d-flex p-ai-center">
-                        <Button type="button" icon="pi pi-chevron-down" className="p-button-text p-ml-2" onClick={(e) => overlayPanelRef.current?.toggle(e)} />
-                        <OverlayPanel ref={overlayPanelRef}>
-                            <h3>Select Rows</h3>
-                            <InputNumber value={rows} onValueChange={(e) => onRowsInputChange(e)} placeholder="Number of rows" />
-                        </OverlayPanel>
-                    </div>
+                    <Button type="button" icon="pi pi-chevron-down" className="p-button-text p-ml-2" onClick={(e) => overlayPanelRef.current?.toggle(e)} />
+                    <OverlayPanel ref={overlayPanelRef}>
+                      <h3>Select Rows</h3>
+                      <InputNumber value={rows} onValueChange={(e) => onRowsInputChange(e)} placeholder="Number of rows" />
+                      <Button type="button" label="Enter" onClick={(e) => onRowsInputChange(e)} />
+                    </OverlayPanel>
+                  </div>
                 )} />
                 <Column selectionMode="multiple" headerStyle={{ width: '3em' }}></Column>
                 <Column field="title" header="Title" style={{ width: '25%' }}></Column>
