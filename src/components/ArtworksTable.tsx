@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { DataTable, DataTablePageEvent } from 'primereact/datatable';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { DataTable, DataTableProps } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { OverlayPanel } from 'primereact/overlaypanel';
 import { Button } from 'primereact/button';
-// import { Checkbox } from 'primereact/checkbox';
+import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputNumber } from 'primereact/inputnumber';
-import SelectedArtworksPanel from './SelectedArtworksPanel'; 
+import SelectedArtworksPanel from './SelectedArtworksPanel';
 
-export interface Artwork {
+interface Artwork {
     id: number;
     title: string;
     place_of_origin: string;
@@ -17,78 +16,99 @@ export interface Artwork {
     date_end: number;
 }
 
-const ArtworksTable: React.FC = () => {
-    const [artworks, setArtworks] = useState<Artwork[]>([]);
-    const [selectedArtworks, setSelectedArtworks] = useState<Artwork[]>([]);
-    const [totalRecords, setTotalRecords] = useState<number>(0);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [rows, setRows] = useState<number>(12);
+const MyDataTable: React.FC = () => {
+    const [data, setData] = useState<Artwork[]>([]);
+    const [selectedArtworks,  setSelectedArtworks] = useState<Artwork[]>([]);
+    const [allSelectedArtworks, setAllSelectedArtworks] = useState<Artwork[]>([]);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [first, setFirst] = useState(0);
+    const [rows, setRows] = useState(10);
     const overlayPanelRef = useRef<OverlayPanel>(null);
 
     useEffect(() => {
-        fetchArtworks(page, rows);
-    }, [page, rows]);
+        fetchData(first / rows + 1, rows);
+    }, [first, rows]);
 
-    const fetchArtworks = async (page: number, rows: number) => {
+    const fetchData = useCallback((page: number, limit: number, updateSelection = false) => {
         setLoading(true);
-        try {
-            const response = await fetch(`https://api.artic.edu/api/v1/artworks?page=${page}&limit=${rows}`);
-            const data = await response.json();
-            setArtworks(data.data);
-            setTotalRecords(data.pagination.total);
-        } catch (error) {
-            console.error('Error fetching artworks:', error);
-        } finally {
-            setLoading(false);
+        fetch(`https://api.artic.edu/api/v1/artworks?page=${page}&limit=${limit}`)
+            .then((res) => res.json())
+            .then((data) => {
+                setData(data.data);
+                setTotalRecords(data.pagination.total);
+
+                if (updateSelection) {
+                    const newSelection = [...allSelectedArtworks, ...data.data];
+                    setSelectedArtworks(newSelection);
+                    setAllSelectedArtworks(newSelection);
+                }
+
+                setLoading(false);
+            })
+            .catch((error) => {
+                console.error('Error fetching data:', error);
+                setLoading(false);
+            });
+    }, [allSelectedArtworks]);
+
+    const onPageChange: DataTableProps['onPage'] = (event:any) => {
+        setFirst(event.first ?? 0);
+        setRows(event.rows ?? 10);
+    };
+    
+    const onRowsInputChange = async (e: { value: number }) => {
+        const numRows = e.value;
+        if (numRows && numRows > 0) {
+            setRows(numRows);
+            setFirst(0);
+            await fetchData(1, numRows); 
         }
+        if (numRows && numRows > 0) {
+            const newSelection = data.slice(0, numRows);
+            setData(newSelection);
+        
+            setSelectedArtworks(newSelection);
+        }
+    console.log("Enter button clicked!");
+    
     };
 
-    const onPageChange = (event: DataTablePageEvent) => {
-        const currentPage = event.page !== undefined ? event.page + 1 : 1;
-        setPage(currentPage);
-        setRows(event.rows);
-    };
 
     const onSelectionChange = (e: any) => {
         setSelectedArtworks(e.value);
-    };
+        setAllSelectedArtworks(e.value);
+        console.log(selectedArtworks,"selectedWorks");
+        console.log(allSelectedArtworks,"allselectedWork")
 
-    const onRowsInputChange = (e: any) => {
-        const numRows = e.value;
-        if (numRows && numRows > 0) {
-            const newSelection = artworks.slice(0, numRows);
-            setSelectedArtworks(newSelection);
-        }
-        console.log("Enter button clicked!");
     };
 
     return (
-        <div className="card">
-            <DataTable
-                value={artworks}
-                paginator
-                rows={rows}
-                rowsPerPageOptions={[12,50]}
-                totalRecords={totalRecords}
-                onPage={onPageChange}
-                lazy
-                loading={loading}
+        <div>
+            <DataTable 
+                value={data} 
+                paginator 
+                paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+                rows={rows} 
+                totalRecords={totalRecords} 
+                lazy 
+                first={first} 
+                loading={loading} 
+                onPage={onPageChange} 
+                responsiveLayout="scroll"
+                selectionMode="multiple"
                 selection={selectedArtworks}
                 onSelectionChange={onSelectionChange}
-                dataKey="id"
-                selectionMode="multiple"  
-                tableStyle={{ minWidth: '50rem' }}
             >
                 <Column header={() => (
                     <div className="p-d-flex p-ai-center">
-                    <Button type="button" icon="pi pi-chevron-down" className="p-button-text p-ml-2" onClick={(e) => overlayPanelRef.current?.toggle(e)} />
-                    <OverlayPanel ref={overlayPanelRef}>
-                      <h3>Select Rows</h3>
-                      <InputNumber value={rows} onValueChange={(e) => onRowsInputChange(e)} placeholder="Number of rows" />
-                      <Button type="button" label="Enter" onClick={(e) => onRowsInputChange(e)} />
-                    </OverlayPanel>
-                  </div>
+                        <Button type="button" icon="pi pi-chevron-down" className="p-button-text p-ml-2" onClick={(e) => overlayPanelRef.current?.toggle(e)} />
+                        <OverlayPanel ref={overlayPanelRef}>
+                            <h3>Select Rows</h3>
+                            <InputNumber value={rows} onValueChange={(e) => onRowsInputChange(e)} placeholder="Number of rows" />
+                            <Button type="button" label="Enter" onClick={(e) => onRowsInputChange(e)} />
+                        </OverlayPanel>
+                    </div>
                 )} />
                 <Column selectionMode="multiple" headerStyle={{ width: '3em' }}></Column>
                 <Column field="title" header="Title" style={{ width: '25%' }}></Column>
@@ -103,4 +123,4 @@ const ArtworksTable: React.FC = () => {
     );
 };
 
-export default ArtworksTable;
+export default MyDataTable;
