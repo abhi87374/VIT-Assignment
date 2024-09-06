@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DataTable, DataTableProps } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
@@ -6,7 +6,7 @@ import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputNumber } from 'primereact/inputnumber';
 import SelectedArtworksPanel from './SelectedArtworksPanel';
 
-interface Artwork {
+export interface Artwork {
     id: number;
     title: string;
     place_of_origin: string;
@@ -18,19 +18,19 @@ interface Artwork {
 
 const MyDataTable: React.FC = () => {
     const [data, setData] = useState<Artwork[]>([]);
-    const [selectedArtworks,  setSelectedArtworks] = useState<Artwork[]>([]);
+    const [selectedArtworks, setSelectedArtworks] = useState<Artwork[]>([]);
     const [allSelectedArtworks, setAllSelectedArtworks] = useState<Artwork[]>([]);
     const [totalRecords, setTotalRecords] = useState(0);
     const [loading, setLoading] = useState(false);
     const [first, setFirst] = useState(0);
-    const [rows, setRows] = useState(10);
+    const [rows, setRows] = useState(12);
     const overlayPanelRef = useRef<OverlayPanel>(null);
 
     useEffect(() => {
         fetchData(first / rows + 1, rows);
     }, [first, rows]);
 
-    const fetchData = useCallback((page: number, limit: number, updateSelection = false) => {
+    const fetchData = (page: number, limit: number, updateSelection = false) => {
         setLoading(true);
         fetch(`https://api.artic.edu/api/v1/artworks?page=${page}&limit=${limit}`)
             .then((res) => res.json())
@@ -46,41 +46,47 @@ const MyDataTable: React.FC = () => {
 
                 setLoading(false);
             })
-            .catch((error) => {
-                console.error('Error fetching data:', error);
+            .catch(() => {
                 setLoading(false);
             });
-    }, [allSelectedArtworks]);
+    };
 
-    const onPageChange: DataTableProps['onPage'] = (event:any) => {
+    const onPageChange: DataTableProps<Artwork>['onPage'] = (event: any) => {
         setFirst(event.first ?? 0);
-        setRows(event.rows ?? 10);
+        setRows(event.rows ?? 12);
     };
     
-    const onRowsInputChange = async (e: { value: number }) => {
+
+    const onRowsInputChange = (e: { value: number }) => {
         const numRows = e.value;
         if (numRows && numRows > 0) {
-            setRows(numRows);
-            setFirst(0);
-            await fetchData(1, numRows); 
-        }
-        if (numRows && numRows > 0) {
-            const newSelection = data.slice(0, numRows);
-            setData(newSelection);
-        
-            setSelectedArtworks(newSelection);
-        }
-    console.log("Enter button clicked!");
-    
-    };
+            const pagesToFetch = Math.ceil(numRows / rows);
+            const currentPage = first / rows + 1;
 
+            if (pagesToFetch > currentPage) {
+                let fetchedData: Artwork[] = [];
+
+                const fetchAllPages = async () => {
+                    for (let i = currentPage; i <= pagesToFetch; i++) {
+                        await fetchData(i, rows, true);
+                    }
+                };
+
+                fetchAllPages().then(() => {
+                    fetchedData = allSelectedArtworks.slice(0, numRows);
+                    setSelectedArtworks(fetchedData);
+                });
+            } else {
+                const newSelection = data.slice(0, numRows);
+                setSelectedArtworks(newSelection);
+                setAllSelectedArtworks(newSelection);
+            }
+        }
+    };
 
     const onSelectionChange = (e: any) => {
         setSelectedArtworks(e.value);
         setAllSelectedArtworks(e.value);
-        console.log(selectedArtworks,"selectedWorks");
-        console.log(allSelectedArtworks,"allselectedWork")
-
     };
 
     return (
@@ -100,6 +106,7 @@ const MyDataTable: React.FC = () => {
                 selection={selectedArtworks}
                 onSelectionChange={onSelectionChange}
             >
+                
                 <Column header={() => (
                     <div className="p-d-flex p-ai-center">
                         <Button type="button" icon="pi pi-chevron-down" className="p-button-text p-ml-2" onClick={(e) => overlayPanelRef.current?.toggle(e)} />
